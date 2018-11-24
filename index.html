@@ -17,19 +17,33 @@
         }
     </style>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/7.0.0/polyfill.min.js" integrity="sha256-KLt4XkpH4F3e5FHHsQMk9iPOhen2S4g/Lpu4nanttL0=" crossorigin="anonymous"></script>
+
     <script language="JavaScript">
+        "use strict";
+
+        var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+        function _toArray(arr) { return Array.isArray(arr) ? arr : Array.from(arr); }
+
         function merge_click(form) {
             form.email1.value = merge_texts(form.email1.value, form.email2.value);
             form.email2.value = "";
         }
 
         function conservative_split(str, delimiter) {
-            const parts = str.split(delimiter);
+            var parts = str.split(delimiter);
             if (parts.length <= 1) {
                 return parts;
             }
-            const [first, ...rest] = parts;
-            const rest_recovered = rest.map(p => delimiter + p);
+
+            var _parts = _toArray(parts),
+                first = _parts[0],
+                rest = _parts.slice(1);
+
+            var rest_recovered = rest.map(function (p) {
+                return delimiter + p;
+            });
             return [first].concat(rest_recovered);
         }
 
@@ -45,13 +59,13 @@
             * CC: ...
             * <more stuff>
             **/
-            const parts = message.split("Sent: ");
+            var parts = message.split("Sent: ");
             if (parts.length !== 2) {
                 console.log("Couldn't find sent date in message: ");
                 console.log(message);
                 return null;
             }
-            const suffix = parts[1];
+            var suffix = parts[1];
             return suffix.split("\n")[0]; // There's always at least 1 element after split.
         }
 
@@ -59,7 +73,7 @@
             if (date_str == null) {
                 return prev_date - 1;
             }
-            const try_parse = Date.parse(date_str);
+            var try_parse = Date.parse(date_str);
             if (isNaN(try_parse)) {
                 console.log("Failed parsing date: " + date_str);
                 return prev_date - 1;
@@ -68,55 +82,101 @@
         }
 
         function assign_missing_dates(start_date, maybe_dates) {
-            let prev_date = start_date;
-            const new_dates = [];
-            for (let maybe_date_str of maybe_dates) {
-                let date = best_effort_assign_date(prev_date, maybe_date_str);
-                prev_date = date;
-                new_dates.push(date);
+            var prev_date = start_date;
+            var new_dates = [];
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = maybe_dates[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var maybe_date_str = _step.value;
+
+                    var date = best_effort_assign_date(prev_date, maybe_date_str);
+                    prev_date = date;
+                    new_dates.push(date);
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
             }
+
             return new_dates;
         }
 
         function best_effort_parse_dates(start_date, messages) {
-            var maybe_dates = messages.map(msg => try_get_date_str(msg));
+            var maybe_dates = messages.map(function (msg) {
+                return try_get_date_str(msg);
+            });
             return assign_missing_dates(start_date, maybe_dates);
         }
 
         function dedup(arr) {
-            const hashTable = {};
+            var hashTable = {};
 
             return arr.filter(function (el) {
-                const key = JSON.stringify(el);
-                const match = Boolean(hashTable[key]);
+                var key = JSON.stringify(el);
+                var match = Boolean(hashTable[key]);
 
-                return (match ? false : hashTable[key] = true);
+                return match ? false : hashTable[key] = true;
             });
         }
 
         function merge_messages(msgs1, msgs2) {
             // From stack overflow
-            const zip = rows => rows[0].map((_, c) => rows.map(row => row[c]));
+            var zip = function zip(rows) {
+                return rows[0].map(function (_, c) {
+                    return rows.map(function (row) {
+                        return row[c];
+                    });
+                });
+            };
 
-            const now = Date.now();
+            var now = Date.now();
 
-            const dates1 = best_effort_parse_dates(now + 1, msgs1); // msg below may get `now - 1`.
+            var dates1 = best_effort_parse_dates(now + 1, msgs1); // msg below may get `now - 1`.
             // Note that the dates are used for ordering only here, the filled-in timings are meaningless but for ordering.
-            const dated_msgs1 = zip([msgs1, dates1]);
+            var dated_msgs1 = zip([msgs1, dates1]);
 
-            const dates2 = best_effort_parse_dates(now, msgs1);
-            const dated_msgs2 = zip([msgs2, dates2]);
+            var dates2 = best_effort_parse_dates(now, msgs1);
+            var dated_msgs2 = zip([msgs2, dates2]);
 
-            const dated_msgs = dated_msgs1.concat(dated_msgs2);
-            dated_msgs.sort(([msg1, date1], [msg2, date2]) => date2 - date1); // descending order
+            var dated_msgs = dated_msgs1.concat(dated_msgs2);
+            dated_msgs.sort(function (_ref, _ref2) {
+                var _ref4 = _slicedToArray(_ref, 2),
+                    msg1 = _ref4[0],
+                    date1 = _ref4[1];
+
+                var _ref3 = _slicedToArray(_ref2, 2),
+                    msg2 = _ref3[0],
+                    date2 = _ref3[1];
+
+                return date2 - date1;
+            }); // descending order
             // The dedup is not perfect - there may be stray newlines & whatever which we don't consider equal.
-            return dedup(dated_msgs.map(([msg, date]) => msg));
+            return dedup(dated_msgs.map(function (_ref5) {
+                var _ref6 = _slicedToArray(_ref5, 2),
+                    msg = _ref6[0],
+                    date = _ref6[1];
+
+                return msg;
+            }));
         }
 
         function merge_texts(email1, email2) {
-            const msgs1 = email_to_messages(email1);
-            const msgs2 = email_to_messages(email2);
-            const merged_msgs = merge_messages(msgs1, msgs2);
+            var msgs1 = email_to_messages(email1);
+            var msgs2 = email_to_messages(email2);
+            var merged_msgs = merge_messages(msgs1, msgs2);
             return merged_msgs.join('');
         }
     </script>
@@ -143,16 +203,5 @@
     <button type="button" class="btn btn-primary" onclick="merge_click(this.form)">אחד</button>
 
 </form>
-<!-- Optional JavaScript -->
-<!-- jQuery first, then Popper.js, then Bootstrap JS -->
-<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-        crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-        crossorigin="anonymous"></script>
-<script src="https://cdn.rtlcss.com/bootstrap/v4.0.0/js/bootstrap.min.js"
-        integrity="sha384-54+cucJ4QbVb99v8dcttx/0JRx4FHMmhOWi4W+xrXpKcsKQodCBwAvu3xxkZAwsH"
-        crossorigin="anonymous"></script>
 </body>
 </html>

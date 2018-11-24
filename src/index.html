@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.rtlcss.com/bootstrap/v4.0.0/css/bootstrap.min.css"
+          integrity="sha384-P4uhUIGk/q1gaD/NdgkBIl3a6QywJjlsFJFk7SPRdruoGddvRVSwv5qFnvZ73cpz" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/email.css">
+    <style>
+        body {
+            margin-left: 100pt;
+            margin-right: 100pt;
+            margin-top: 75pt;
+        }
+    </style>
+
+    <script language="JavaScript">
+        function merge_click(form) {
+            form.email1.value = merge_texts(form.email1.value, form.email2.value);
+            form.email2.value = "";
+        }
+
+        function conservative_split(str, delimiter) {
+            const parts = str.split(delimiter);
+            if (parts.length <= 1) {
+                return parts;
+            }
+            const [first, ...rest] = parts;
+            const rest_recovered = rest.map(p => delimiter + p);
+            return [first].concat(rest_recovered);
+        }
+
+        function email_to_messages(email) {
+            return conservative_split(email, "From: ");
+        }
+
+        // Message -> Option[String]
+        function try_get_date_str(message) {
+            /* Message:
+            * From: ...
+            * Sent: ...
+            * CC: ...
+            * <more stuff>
+            **/
+            const parts = message.split("Sent: ");
+            if (parts.length !== 2) {
+                console.log("Couldn't find sent date in message: ");
+                console.log(message);
+                return null;
+            }
+            const suffix = parts[1];
+            return suffix.split("\n")[0]; // There's always at least 1 element after split.
+        }
+
+        function best_effort_assign_date(prev_date, date_str) {
+            if (date_str == null) {
+                return prev_date - 1;
+            }
+            const try_parse = Date.parse(date_str);
+            if (isNaN(try_parse)) {
+                console.log("Failed parsing date: " + date_str);
+                return prev_date - 1;
+            }
+            return try_parse;
+        }
+
+        function assign_missing_dates(start_date, maybe_dates) {
+            let prev_date = start_date;
+            const new_dates = [];
+            for (let maybe_date_str of maybe_dates) {
+                let date = best_effort_assign_date(prev_date, maybe_date_str);
+                prev_date = date;
+                new_dates.push(date);
+            }
+            return new_dates;
+        }
+
+        function best_effort_parse_dates(start_date, messages) {
+            var maybe_dates = messages.map(msg => try_get_date_str(msg));
+            return assign_missing_dates(start_date, maybe_dates);
+        }
+
+        function dedup(arr) {
+            const hashTable = {};
+
+            return arr.filter(function (el) {
+                const key = JSON.stringify(el);
+                const match = Boolean(hashTable[key]);
+
+                return (match ? false : hashTable[key] = true);
+            });
+        }
+
+        function merge_messages(msgs1, msgs2) {
+            // From stack overflow
+            const zip = rows => rows[0].map((_, c) => rows.map(row => row[c]));
+
+            const now = Date.now();
+
+            const dates1 = best_effort_parse_dates(now + 1, msgs1); // msg below may get `now - 1`.
+            // Note that the dates are used for ordering only here, the filled-in timings are meaningless but for ordering.
+            const dated_msgs1 = zip([msgs1, dates1]);
+
+            const dates2 = best_effort_parse_dates(now, msgs1);
+            const dated_msgs2 = zip([msgs2, dates2]);
+
+            const dated_msgs = dated_msgs1.concat(dated_msgs2);
+            dated_msgs.sort(([msg1, date1], [msg2, date2]) => date2 - date1); // descending order
+            // The dedup is not perfect - there may be stray newlines & whatever which we don't consider equal.
+            return dedup(dated_msgs.map(([msg, date]) => msg));
+        }
+
+        function merge_texts(email1, email2) {
+            const msgs1 = email_to_messages(email1);
+            const msgs2 = email_to_messages(email2);
+            const merged_msgs = merge_messages(msgs1, msgs2);
+            return merged_msgs.join('');
+        }
+    </script>
+
+    <title>איחוד אימיילים</title>
+</head>
+<body>
+<h1>איחוד אימיילים</h1>
+<form action="">
+    <div class="row">
+        <div class="col">
+            <div class="form-group">
+                <label for="exampleFormControlTextarea2">אימייל 2</label>
+                <textarea class="form-control" name="email2" id="exampleFormControlTextarea2" rows="10"></textarea>
+            </div>
+        </div>
+        <div class="col">
+            <div class="form-group">
+                <label for="exampleFormControlTextarea1">אימייל 1</label>
+                <textarea class="form-control" name="email1" id="exampleFormControlTextarea1" rows="10"></textarea>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="merge_click(this.form)">אחד</button>
+
+</form>
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.rtlcss.com/bootstrap/v4.0.0/js/bootstrap.min.js"
+        integrity="sha384-54+cucJ4QbVb99v8dcttx/0JRx4FHMmhOWi4W+xrXpKcsKQodCBwAvu3xxkZAwsH"
+        crossorigin="anonymous"></script>
+</body>
+</html>
