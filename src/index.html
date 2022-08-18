@@ -104,7 +104,7 @@
             // Note that the dates are used for ordering only here, the filled-in timings are meaningless but for ordering.
             const dated_msgs1 = zip([msgs1, dates1]);
 
-            const dates2 = best_effort_parse_dates(now, msgs1);
+            const dates2 = best_effort_parse_dates(now, msgs2);
             const dated_msgs2 = zip([msgs2, dates2]);
 
             const dated_msgs = dated_msgs1.concat(dated_msgs2);
