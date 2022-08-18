@@ -148,7 +148,7 @@
             // Note that the dates are used for ordering only here, the filled-in timings are meaningless but for ordering.
             var dated_msgs1 = zip([msgs1, dates1]);
 
-            var dates2 = best_effort_parse_dates(now, msgs1);
+            var dates2 = best_effort_parse_dates(now, msgs2);
             var dated_msgs2 = zip([msgs2, dates2]);
 
             var dated_msgs = dated_msgs1.concat(dated_msgs2);
